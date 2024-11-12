@@ -1,0 +1,61 @@
+﻿@page "/"
+@inject IJSRuntime JSRuntime
+
+<h1>Convertir Byte en Base64</h1>
+
+<MudGrid Justify="Justify.FlexStart" Class="align-items-center mt-5">
+    <MudItem xs="5">
+        <MudTextField T="string" Label="Byte" Variant="Variant.Outlined" @bind-Value="byteString" Lines="20" />
+    </MudItem>
+    <MudItem xs="2" Class="d-flex justify-content-center">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="ConvertDoc">Convertir</MudButton>
+    </MudItem>
+    <MudItem xs="5">
+        <MudTextField T="string" Label="Base64" Variant="Variant.Outlined" @bind-Value="base64String" Lines="20" />
+    </MudItem>
+    <MudItem xs="2" Class="d-flex justify-content-center">
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="Download">Télécharger le document</MudButton>
+    </MudItem> 
+</MudGrid>
+
+@code {
+    private string byteString = "";
+    private string base64String = "";
+
+    private void ConvertDoc()
+    {
+        if (byteString.StartsWith("0x"))
+        {
+            byteString = byteString.Substring(2);
+        }
+
+        if (string.IsNullOrEmpty(byteString) || !IsHexadecimal(byteString) || byteString.Length % 2 != 0)
+        {
+            base64String = "Erreur : La chaîne ne contient pas de valeurs hexadécimales valides.";
+            StateHasChanged();
+            return;
+        }
+
+        byte[] byteArray = new byte[byteString.Length / 2];
+        for (int i = 0; i < byteString.Length; i += 2)
+        {
+            byteArray[i / 2] = Convert.ToByte(byteString.Substring(i, 2), 16);
+        }
+
+        base64String = Convert.ToBase64String(byteArray);
+        StateHasChanged();
+    }
+
+    private bool IsHexadecimal(string value)
+    {
+        return value.All(c => "0123456789ABCDEFabcdef".Contains(c));
+    }
+
+    private async void Download()
+    {
+        if (base64String != "")
+        {
+            await JSRuntime.InvokeVoidAsync("downloadFile", "Téléchargement", base64String, "application/pdf");
+        }
+    }
+}
